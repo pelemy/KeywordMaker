@@ -805,6 +805,7 @@
 						}
 
 						_tool.appendArg($targetContainer, toAppendArg);
+						page.rebindEvents();
 					}
 				});
 			},
@@ -892,6 +893,7 @@
 							}
 						}
 						$(".arg-containerm, .list-arg-container").removeClass("ui-state-active ui-state-hover");
+						page.rebindEvents();
 						if(_save.stopsave>0) _save.stopsave--;
 						_save.startdrag = 0;
 					}
@@ -931,6 +933,7 @@
 						// 	$li.insertBefore($placeholder);
 						// }
 						$(".arg-container, .list-arg-container").removeClass("ui-state-active ui-state-hover");
+						page.rebindEvents();
 					}
 
 				});
