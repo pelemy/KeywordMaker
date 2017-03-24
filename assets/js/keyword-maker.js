@@ -108,6 +108,9 @@
 				_memo.propdata = layouthistory.propdata;
 				_memo.oid = layouthistory.maxoid;
 				if (window.canvasHtml) $(".canvas").html(window.canvasHtml);
+				// reset memo data
+				_save.layouthistory.list = [];
+				_save.layouthistory.list.push(window.canvasHtml);
 			}
 		}
 	},
@@ -813,12 +816,26 @@
 					items: ".argument",
 					connectWith: ".arg-container",
 					receive: function(ev, ui) {
-						var $placeholder = $(this).find(">.li-placeholder");
+						// add placeholder to origin sortable container if element dragged out.
+						var originArgContainer = ui.sender,
+							originPlaceholder = originArgContainer.find(">.li-placeholder");
+
+						if (originPlaceholder.length === 0) {
+							page.helper.addArgPlaceHolder(originArgContainer);
+						}
+
+						// to put placeholder at then end. if arg num meet the arg limit, then won't add placeholder.
+						var $targetContainer = ui.item.parent(),
+							$targetArg = $targetContainer.closest(".argument"),
+							targetArglimit = $targetArg.attr("data-arg-limit"),
+							targetArgnum = $targetContainer.children(".argument").length,
+							$placeholder = $targetContainer.find(">.li-placeholder");
 
 						if ($placeholder.length > 0) {
 							$placeholder.remove();
-							page.helper.addArgPlaceHolder($(this));
+							if (targetArgnum < targetArglimit) page.helper.addArgPlaceHolder($(this));
 						}
+
 					},
 					start: function(ev, ui) {
 						if (!_save.startdrag) _save.stopsave++;
@@ -827,26 +844,54 @@
 					stop: function(ev, ui) {
 						var argType = ui.item.attr("data-arg-type");
 						var $targetContainer = ui.item.parent();
+						var $targetArg = $targetContainer.closest(".argument"),
+							dragFunc = ui.item.attr("data-func"),
+							dragRank = ui.item.attr("data-scope-rank"),
+							targetFunc = $targetArg.attr("data-func"),
+							targetArglimit = $targetArg.attr("data-arg-limit"),
+							targetScopeRank = $targetArg.attr("data-scope-rank"),
+							argnum = $targetContainer.children(".argument").length,
+							cansort = true;
 
-						if (argType === _const.list_chip) {
-							// add list-arg-container wrap if a list-chip is moved into an operator
-							if ($targetContainer.hasClass("arg-container")) {
-								// make list-chip wrap with list-arg-contianer
-								var newItem = page.helper.createListArgContainer();
-								newItem.find("ul").append(ui.item.clone());
-								ui.item.replaceWith(newItem);
-							}
-
-							// clear empty list-arg-container which has no any list-chip
-							var listArgs = $(this).find(">.box-list");
-							listArgs.each(function(index, ele){
-								var $that = $(this);
-								if ($that.find(">ul").children().length === 0) {
-									$that.remove();
+						// check if arg number exceeded the arg limit.
+						if (argnum > targetArglimit) {
+							$(this).sortable('cancel');
+							page.showNotification("Cannot drop any more argument");
+							cansort = false;
+						} else {
+							// check scope rank
+							if (ui.item.hasClass('box-operator') && targetScopeRank) {
+								if (dragRank != 0 && targetScopeRank != 0 && parseInt(dragRank) > parseInt(targetScopeRank)) {
+									page.showNotification("Scope restriction: " + dragFunc + " cannot be dropped in " + targetFunc);
+									cansort = false;
 								}
-							});
+							}
 						}
-						$(".arg-container").removeClass("ui-state-active ui-state-hover");
+
+						if (!cansort) {
+							$(this).sortable('cancel');
+						} else {
+							// different processing when append list chip argument.
+							if (argType === _const.list_chip) {
+								// add list-arg-container wrap if a list-chip is moved into an operator
+								if ($targetContainer.hasClass("arg-container")) {
+									// make list-chip wrap with list-arg-contianer
+									var newItem = page.helper.createListArgContainer();
+									newItem.find("ul").append(ui.item.clone());
+									ui.item.replaceWith(newItem);
+								}
+
+								// clear empty list-arg-container which has no any list-chip
+								var listArgs = $(this).find(">.box-list");
+								listArgs.each(function(index, ele){
+									var $that = $(this);
+									if ($that.find(">ul").children().length === 0) {
+										$that.remove();
+									}
+								});
+							}
+						}
+						$(".arg-containerm, .list-arg-container").removeClass("ui-state-active ui-state-hover");
 						if(_save.stopsave>0) _save.stopsave--;
 						_save.startdrag = 0;
 					}
@@ -857,7 +902,7 @@
 					//accept: ".ly-list",
 					activeClass: "ui-state-active",
 					hoverClass: "ui-state-hover",
-					accept: ":not(.ui-sortable-helper)",
+					accept: ":not(.ui-sortable-helper), .argument[data-arg-type=ListChip]",
 					greedy: true,
 					tolerance: "intersect",
 					start: function(ev, ui) {
@@ -885,7 +930,7 @@
 						// 	$placeholder = that.find(">.li-placeholder");
 						// 	$li.insertBefore($placeholder);
 						// }
-						$(".arg-container").removeClass("ui-state-active ui-state-hover");
+						$(".arg-container, .list-arg-container").removeClass("ui-state-active ui-state-hover");
 					}
 
 				});
@@ -1070,6 +1115,8 @@
 					_memo.propdata = {};
 					page.helper.addRulePlaceholder();
 					page.events.switchOnNewArgPanel();
+					// reset memo data
+					_save.layouthistory.list = [];
 				});
 			});
 
