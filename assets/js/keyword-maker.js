@@ -806,6 +806,7 @@
 
 						_tool.appendArg($targetContainer, toAppendArg);
 						page.rebindEvents();
+						console.log("arg container dropped");
 					}
 				});
 			},
@@ -846,6 +847,7 @@
 						var argType = ui.item.attr("data-arg-type");
 						var $targetContainer = ui.item.parent();
 						var $targetArg = $targetContainer.closest(".argument"),
+							dragArgtype = ui.item.attr("data-arg-type"),
 							dragFunc = ui.item.attr("data-func"),
 							dragRank = ui.item.attr("data-scope-rank"),
 							targetFunc = $targetArg.attr("data-func"),
@@ -854,9 +856,14 @@
 							argnum = $targetContainer.children(".argument").length,
 							cansort = true;
 
+						// operator cannot be dragged in to list-arg-container
+						if (dragArgtype === _const.operator && $targetContainer.hasClass("list-arg-container")) {
+							cansort = false;
+						}
+
 						// check if arg number exceeded the arg limit.
-						if (argnum > targetArglimit) {
-							$(this).sortable('cancel');
+						if (cansort && argnum > targetArglimit) {
+							//$(this).sortable('cancel');
 							page.showNotification("Cannot drop any more argument");
 							cansort = false;
 						} else {
@@ -934,6 +941,7 @@
 						// }
 						$(".arg-container, .list-arg-container").removeClass("ui-state-active ui-state-hover");
 						page.rebindEvents();
+						console.log("list arg container dragged");
 					}
 
 				});
