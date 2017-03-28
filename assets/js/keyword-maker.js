@@ -976,7 +976,7 @@
 							timeoutId = window.setTimeout(function() {
 								timeoutId = null;
 								positionForm(that);
-							}, 800);
+							}, 300);
 						}
 					}
 
@@ -1062,14 +1062,14 @@
 			// drag event of operator
 			$(".sidebar .ly-operator").draggable({
 				handle: ".label",
-				cursorAt: { right: 0,top: 30},
+				cursorAt: { right: 40,top: 30},
 				opacity: .45,
 				zIndex: 999,
 				// connectToSortable: ".arg-container", // if this set, arg-container will receive this drag element
 				appendTo: ".helper-holder",
 				helper: "clone",
 				drag: function(e, t) {
-					t.helper.width(300);
+					t.helper.width(150);
 				},
 				start: function(ev, ui) {
 					if (!_save.startdrag) _save.stopsave++;
@@ -1085,14 +1085,14 @@
 			// drag event of list
 			$(".sidebar .ly-list").draggable({
 				handle: ".label",
-				cursorAt: { right: 40 },
+				cursorAt: { right: 60 },
 				opacity: .45,
 				zIndex: 999,
 				// connectToSortable: ".arg-container", // if this set, arg-container will receive this drag element
 				appendTo: ".helper-holder",
 				helper: "clone",
 				drag: function(e, t) {
-					t.helper.width(300);
+					//t.helper.width(200);
 				},
 				start: function( event, ui ) {
 			       $(this).data('preventBehaviour', true);
