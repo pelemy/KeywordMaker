@@ -893,7 +893,7 @@
 							}
 						}
 						$(".arg-containerm, .list-arg-container").removeClass("ui-state-active ui-state-hover");
-						page.rebindEvents();
+						//page.rebindEvents();
 						if(_save.stopsave>0) _save.stopsave--;
 						_save.startdrag = 0;
 					}
@@ -1085,7 +1085,7 @@
 			// drag event of list
 			$(".sidebar .ly-list").draggable({
 				handle: ".label",
-				cursorAt: { right: 80 },
+				cursorAt: { right: 40 },
 				opacity: .45,
 				zIndex: 999,
 				// connectToSortable: ".arg-container", // if this set, arg-container will receive this drag element
