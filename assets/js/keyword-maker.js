@@ -12,7 +12,7 @@
 		copy_highlight_class: "copy-highlight",
 		// * limit: argument count limitation;
 		// * scopeRank: the larger it is, the wider scope it has. 0-no scope restriction
-		// * hasDistanceDefine: whether has character distance and sentance distance
+		// * hasDistanceDefine: whether has character distance and sentence distance
 		operatorFuncs: {
 			"AND/PAR": {limit: 1000, scopeRank: 10, hasDistanceDefine: false},
 			"AND/SEN": {limit: 1000, scopeRank: 8, hasDistanceDefine: false},
@@ -347,7 +347,7 @@
 				argNum = $parentContainer.children(".argument").length;
 				hasPlaceholder = $parentContainer.children(".li-placeholder").length > 0;
 
-				// we won't add placeholder in canvase when removeing a rule;
+				// we won't add placeholder in canvas when removing a rule;
 				// if arg number is less than limit and no placeholder, we add a placeholder to let user continue adding arg.
 				if (!$toRemoveArg.hasClass("ly-row") && !hasPlaceholder && argNum < parseInt(argLimit)) {
 					page.helper.addArgPlaceHolder($parentContainer);
@@ -606,7 +606,7 @@
 				}
 				page.helper.toggleCharDistProp(toShowCharDistance);
 			},
-			// switch on/off of character-distance, sentance-distance property
+			// switch on/off of character-distance, sentence-distance property
 			toggleCharDistProp: function(toshow) {
 				var $propPanel = $("#argument_prop");
 				if (toshow) {
@@ -806,7 +806,6 @@
 
 						_tool.appendArg($targetContainer, toAppendArg);
 						page.rebindEvents();
-						console.log("arg container dropped");
 					}
 				});
 			},
@@ -899,7 +898,7 @@
 								});
 							}
 						}
-						$(".arg-containerm, .list-arg-container").removeClass("ui-state-active ui-state-hover");
+						$(".arg-container, .list-arg-container").removeClass("ui-state-active ui-state-hover");
 						//page.rebindEvents();
 						if(_save.stopsave>0) _save.stopsave--;
 						_save.startdrag = 0;
@@ -941,7 +940,6 @@
 						// }
 						$(".arg-container, .list-arg-container").removeClass("ui-state-active ui-state-hover");
 						page.rebindEvents();
-						console.log("list arg container dragged");
 					}
 
 				});
@@ -1228,11 +1226,12 @@
 			// click the blank area of canvas
 			$(".main-panel>.content").click(function() {
 				_tool.setUpateReady();
-				_tool.updateArg(); // update previous arg data.
+				_tool.updateArg(_const.canvas_oid); // update previous arg data.
 				page.helper.toggleProp("Canvas");
 				$("#argument_prop #js_arg_type").html("Canvas");
 				page.events.switchOnPropPanel();
 				_tool.clearHighlight(_const.select_highlight_class);
+				_memo.selected_arg_oid = _const.canvas_oid;
 			});
 
 			// click tab head on side bar
