@@ -409,66 +409,50 @@
 			}
 			return keywordlist;
 		},
+		// to preserve each keyword in list and concat different chips of a list argument
 		// * listData: list array. e.g. [{wsTolerance:3, kwdlist:["aa","bb"]},{wsTolerance:3, kwdlist:["cc","dd"]}]
-		// * postfix: string add to the end of a keyword. e.g. score: ^20/10/5/1
-		joinKwdList: function(listData, postfix) {
-			var result = [], listChip, wsTolerance, tempKwdList, tempKwd, preservedKwd,
-				ptfix = "", preserveKwdFunc = _render.preserveKwd;
-			if (postfix) ptfix = postfix;
+		concatKwdList: function(listData) {
+			var result = [], listChip, preservedList, preserveKwdFunc = this.preserveKwd;
 
 			for (var i = 0, len = listData.length; i < len; i++) {
 				listChip = listData[i];
-				wsTolerance = listChip.wsTolerance;
-				tempKwdList = listChip.kwdlist;
-				for (var j = 0, kwdlistLen = tempKwdList.length; j < kwdlistLen; j++) {
-					tempKwd = tempKwdList[j];
-					//if (isPreserve === true) {
-						preservedKwd = preserveKwdFunc(tempKwd, wsTolerance);
-						result.push(preservedKwd + ptfix);
-					//} else {
-					//	result.push(tempKwd + ptfix);
-					//}
-
-				}
+				preservedList = listChip.kwdlist.map(function(value) {
+					return preserveKwdFunc(value, listChip.wsTolerance);
+				});
+				result = result.concat(preservedList);
 			}
 			return result;
 		},
-		// get a list which is the multiply product of two lists. result = list1 X list2
-		// * list1, list2: list array. e.g. [{wsTolerance:3, kwdlist:["aa","bb"]},{wsTolerance:3, kwdlist:["cc","dd"]}]
-		// * isPreserveFirst: true: preserve the first list; false: use the origin first list
+		// unit different lists to rule statements.
 		// * joinword: could be "", or like "3s2" which is defined for AND/PRE
-		multiplyList: function(list1, list2, joinword) {
-			var result = [],
-				keywordList1 = list1,
-				keywordList2 = list2,
-				i, j, len1, len2;
+		unitList: function(argList, joinword) {
+			var unit = function(prev, curr, currInd) {
+				var result = [];
+				var keywordList1 = prev;
+				var keywordList2 = _render.concatKwdList(curr);
 
+				// we only concat the first arglist, the later prev arguments will be a united list
+				if (currInd === 1) keywordList1 = _render.concatKwdList(prev);
+				for (var i= 0, len1 = keywordList1.length; i < len1; i++) {
+					for (var j= 0, len2 = keywordList2.length; j < len2; j++) {
+						result.push(keywordList1[i] + joinword + keywordList2[j]);
+					}
+				}
+				return result;
+			};
 			if (joinword === "") {
 				joinword = "{@@}"
 			} else {
 				joinword = "{@@}" + joinword + "{@@}";
 			}
-			// keywordList1[0] can be list object(e.g. {wsTolerance:3, kwdlist:["aa","bb"]}) which is a new list,
-			// or a string (e.g. "AND/PAR(aa bb)") which is a joined result.
-			if (typeof keywordList1[0] === "object") keywordList1 = _render.joinKwdList(list1);
-			if (typeof keywordList2[0] === "object") keywordList2 = _render.joinKwdList(list2);
-			for (i= 0, len1 = keywordList1.length; i < len1; i++) {
-				for (j= 0, len2 = keywordList2.length; j < len2; j++) {
-					result.push(keywordList1[i] + joinword + keywordList2[j]);
-				}
-			}
-			return result;
+			return argList.reduce(unit);
 		},
 		// calculate the combined keyword list of an operator
 		// * operator: operator object. e.g. {func: "AND", arguments: [list1, list2, operator]}
 		renderOperator: function(operator) {
 			var argList = operator.arguments,
 				func = operator.func,
-				len = argList.length,
-				multiplyListFunc = _render.multiplyList,
-				joinword = "",
-				ind = 0, result = [],
-				list1, list2;
+				joinword = "", result;
 
 			if (_const.operatorFuncs[func].hasDistanceDefine) {
 				joinword = operator.chardistance;
@@ -476,19 +460,9 @@
 					joinword = operator.chardistance + "s" + operator.sentdistance;
 				}
 			}
-			while (ind < len -1) {
-				if (ind === 0) {
-					list1 = argList[ind];
-					list2 = argList[++ind];
-					if (list1.func) list1 = _render.renderOperator(list1);
-					if (list2.func) list2 = _render.renderOperator(list2);
-					result = multiplyListFunc(list1, list2, joinword);
-				} else {
-					list2 = argList[++ind];
-					if (list2.func) list2 = _render.renderOperator(list2);
-					result = multiplyListFunc(result, list2, joinword);
-				}
-			}
+			// unite list to rule statements
+			result = this.unitList(argList, joinword);
+			// add func to statments
 			for (var i= 0, len=result.length; i<len; i++) {
 				result[i] = operator.func + "(" + result[i] + ")";
 			}
@@ -500,7 +474,7 @@
 			return list;
 		},
 		renderRuleByList: function(listData, score) {
-			var list = _render.joinKwdList(listData);
+			var list = _render.concatKwdList(listData);
 			list = _render.formatKwd(list, score);
 			return list;
 		},
@@ -1178,6 +1152,12 @@
 				}
 			});
 
+			var updateArgFunc = function() {
+				var oid = _memo.selected_arg_oid;
+				_tool.setUpateReady();
+				_tool.updateArg(oid);
+			};
+
 			// click event on popover form
 			$("#popover_form").on("click", ".js-copy", function() {
 				var oid = $("#popover_form").attr("target-oid");
@@ -1193,17 +1173,14 @@
 				var $operator = $(".argument[data-oid=" + oid + "]");
 				var func = $(this).val();
 				var res = page.helper.updateOperatorType(func, oid);
-				if (res === false) {
+				if (res) {
+					$("#argument_prop .js-func-select").val(func);
+				} else {
 					//restore to previous value
-					$(this).val($operator.attr("data-func"))
+					$(this).val($operator.attr("data-func"));
 				}
 			});
 
-			var updateArgFunc = function() {
-				var oid = _memo.selected_arg_oid;
-				_tool.setUpateReady();
-				_tool.updateArg(oid);
-			};
 
 			 //click event on prop panel
 			$("#argument_prop").on("click", ".js-update", updateArgFunc)
@@ -1215,9 +1192,7 @@
 				var $operator = $(".argument[data-oid=" + oid + "]");
 				var func = $(this).val();
 				var res = page.helper.updateOperatorType(func, oid);
-				if (res) {
-					updateArgFunc(oid);
-				} else {
+				if (res === false) {
 					//restore to previous value
 					$(this).val($operator.attr("data-func"));
 				}

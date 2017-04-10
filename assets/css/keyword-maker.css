@@ -39,6 +39,9 @@
 .card > .header {
 	padding-left: 15px;
 	padding-right: 15px;
+	white-space:nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 /* customize placeholder */
