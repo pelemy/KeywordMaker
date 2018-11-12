@@ -5,6 +5,8 @@
 .ui-state-hover {border: 2px dashed #EB5E28;/*#ee0000*/;}
 .ui-state-active {background-color: #eee;}
 
+.nav-separator { border-right: 1px solid;}
+
 /* == side bar items == */
 .sidebar .nav { margin-left: 5px;}
 

@@ -41,6 +41,7 @@
 	_memo = {
 		oid: 1, // for accumulate object id
 		selected_arg_oid: "oid_0", // to store the select argument, oid_0 is the canvas object
+		curFolderIndex: 0,
 		copyitem: null, // to store the copied item
 		propdata: {}, // a map object to store property data. e.g. {"oid_3": {wsTolerance: 3, kwdlist: []}}
 		//kwdListMap:{}, // a map to store keyword list of each argument. key:oid, value:keyword list
@@ -54,10 +55,118 @@
 			var newoid = "oid_" + (_memo.oid++);
 			_memo.initPropdata(newoid, argType);
 			return newoid;
+		},
+		resetPropdata: function() {
+			this.oid = 1;
+			this.propdata = {};
+		}
+	},
+	_folder = {
+		folderdata: null,
+		// create a new folder. return all folder data.
+		create : function() {
+			var folder = {}, folderdata = this.folderdata, newindex, newname;
+
+			if (!folderdata) {
+				folderdata = {};
+				folderdata.lastShowFolderIndex = 0;
+				folderdata.list = [];
+			}
+			newindex = folderdata.list.length;
+			newname = "Folder " + (newindex + 1);
+			folder.name = newname;
+			folder.layout = null;
+			folder.propdata = {};
+			folder.maxoid = 1;
+			folderdata.list.push(folder);
+
+			this.save(folderdata);
+			this.show(newindex);
+			page.helper.clearCanvas();
+			this.refreshList();
+			return folderdata;
+		},
+		// delete a folder
+		destroy: function(index) {
+			var folderdata = this.folderdata, len, nextindex;
+
+			// delete folder
+			folderdata.list.splice(index, 1);
+
+			// show next folder
+			len = folderdata.list.length; // the length after the folder removed
+			if (len > 0) {
+				if (index === len){ // removed item is the last one
+					nextindex = index - 1; // show previous folder
+				} else {
+					nextindex = index; // show next folder
+				}
+				_memo.curFolderIndex = folderdata.lastShowFolderIndex = nextindex;
+				this.save(folderdata);
+				this.refreshList();
+			} else {
+				this.create();
+			}
+
+			this.show(nextindex);
+		},
+		// load folder to current environment
+		show: function(index) {
+			var folderdata = this.folderdata, folder = this.folderdata.list[index];
+
+			if (folder) {
+				window.canvasHtml = folder.layout;
+				_memo.propdata = folder.propdata;
+				_memo.oid = folder.maxoid;
+				$("#js_folder_name").html(folder.name);
+				//document.title = folder.name;
+				if (window.canvasHtml) $(".canvas").html(window.canvasHtml);
+
+				_memo.curFolderIndex = index; // set new created folder as current
+				folderdata.lastShowFolderIndex = index;
+				this.save(folderdata);
+
+				page.rebindEvents();
+				page.initContainer();
+			}
+		},
+		// save data of all folders
+		save: function(data) {
+			this.folderdata = data;
+			if (_save.supportstorage()) {
+				localStorage.setItem("folderdata",JSON.stringify(data));
+			}
+		},
+		// clear folder: reset folder data
+		clear: function(index) {
+			var folder, tIndex;
+			if (index && typeof index === "number") {
+				tIndex = index;
+			} else {
+				tIndex = _memo.curFolderIndex;
+			}
+			folder = this.folderdata.list[tIndex];
+			folder.layout = null;
+			folder.propdata = {};
+			folder.maxoid = 1;
+		},
+		// refresh folder list in the top drop down list
+		refreshList: function() {
+			var list = this.folderdata.list;
+			var html = list.map(function(value, index) {
+				return '<li><a href="#" data-folder-index="' + index + '">' + value.name +'</a></li>';
+			});
+			$(".js-folders").html(html);
+		},
+		// rename the current editing folder
+		rename: function(index, name) {
+			var folder = this.folderdata.list[index];
+			folder.name = name;
+			this.show(index);
+			this.refreshList();
 		}
 	},
 	_save = {
-		layouthistory: null,
 		timerSave: 1000,
 		startdrag: 0,
 		stopsave: 0,
@@ -78,40 +187,39 @@
 			}
 		},
 		saveLayout: function() {
-			var data = _save.layouthistory;
+			var data = _folder.folderdata,
+				curFolderIndex = _memo.curFolderIndex,
+				curfolder;
+
 			if (!data) {
-				data={};
-				data.lastshownInd = 0;
-				data.lastshownexmp = {};
-				data.list = [];
-				data.propdata = {};
-				data.maxoid = 1;
+				data = _folder.create();
+				curfolder = data.list[0];
+			} else {
+				data.lastShowFolderIndex = curFolderIndex;
+				curfolder = data.list[curFolderIndex];
 			}
-			if (data.list.length > data.count) {
-				for (var i=data.count;i<data.list.length;i++)
-					data.list[i]=null;
+
+			curfolder.layout = window.canvasHtml;
+			curfolder.propdata = _memo.propdata;
+			curfolder.maxoid = _memo.oid;
+			if (this.supportstorage()) {
+				localStorage.setItem("folderdata",JSON.stringify(data));
 			}
-			data.list[data.count] = window.canvasHtml;
-			data.propdata = _memo.propdata;
-			data.maxoid = _memo.oid;
-			data.count++;
-			if (_save.supportstorage()) {
-				localStorage.setItem("layoutdata",JSON.stringify(data));
-			}
-			_save.layouthistory = data;
+			_folder.folderdata = data;
 		},
-		restoreData: function(){
-			var layouthistory;
+		restoreData: function() {
+			var folderdata, lastShowFolderIndex;
+			//localStorage.clear();
+			//localStorage.removeItem("folderdata");
 			if (_save.supportstorage()) {
-				layouthistory = _save.layouthistory = JSON.parse(localStorage.getItem("layoutdata"));
-				if (!layouthistory) return false;
-				window.canvasHtml = layouthistory.list[layouthistory.count-1];
-				_memo.propdata = layouthistory.propdata;
-				_memo.oid = layouthistory.maxoid;
-				if (window.canvasHtml) $(".canvas").html(window.canvasHtml);
-				// reset memo data
-				_save.layouthistory.list = [];
-				_save.layouthistory.list.push(window.canvasHtml);
+				folderdata = _folder.folderdata = JSON.parse(localStorage.getItem("folderdata"));
+				console.log(folderdata);
+				if (!folderdata) folderdata = _folder.create();
+				lastShowFolderIndex = folderdata.lastShowFolderIndex;
+
+				_memo.curFolderIndex = lastShowFolderIndex;
+				_folder.show(lastShowFolderIndex);
+				_folder.refreshList();
 			}
 		}
 	},
@@ -119,25 +227,22 @@
 		hasupdate: false, // flag to avoid multiple same update operation.
 		setUpateReady: function() { _tool.hasupdate = true; },
 		resetUpdate: function() { _tool.hasupdate = false; },
-		updateItemPanelInfo: function(panelType, info) {
+		/*updateItemPanelInfo: function(panelType, info) {
 			var $panel = $("#selected_item_panel");
 
 			if (panelType === "copy-panel") $panel = $("#copy_item_panel");
 			$panel.find(".js-item").html(info.item);
 			$panel.find(".js-oid").html(info.oid);
 			$panel.find(".js-about").html(info.about);
-		},
+		},*/
 		// copy an argument to copy board
 		copyArg: function(copyOid) {
 			var copySource = $(".argument[data-oid=" + copyOid + "]"),
-				copyItem = _memo.copyitem = copySource.clone(), // append copy to store
-				argType = copyItem.data("arg-type"),
-				argInfo = copyItem.find(".header:first").text(),
-				info = {item: argType, oid: copyOid, about:argInfo};
-			
-			_memo.copyitem.find(".card").removeClass(_const.select_highlight_class)
+				$copyItem = _memo.copyitem = copySource.clone(); // append copy to memo
+
+			$copyItem.find(".card")
+				.removeClass(_const.select_highlight_class)
 				.removeClass(_const.copy_highlight_class);
-			_tool.updateItemPanelInfo("copy-panel", info);
 			_tool.highlightArg(copySource, _const.copy_highlight_class);
 		},
 		// append an argument from copy board to target container
@@ -424,7 +529,7 @@
 			}
 			return result;
 		},
-		// unit different lists to rule statements.
+		// unit different list arguments to rule statements.
 		// * joinword: could be "", or like "3s2" which is defined for AND/PRE
 		unitList: function(argList, joinword) {
 			var unit = function(prev, curr, currInd) {
@@ -432,8 +537,9 @@
 				var keywordList1 = prev;
 				var keywordList2 = _render.concatKwdList(curr);
 
-				// we only concat the first arglist, the later prev arguments will be a united list
+				// only the first list need to concat, the later prev arguments will be a united list
 				if (currInd === 1) keywordList1 = _render.concatKwdList(prev);
+
 				for (var i= 0, len1 = keywordList1.length; i < len1; i++) {
 					for (var j= 0, len2 = keywordList2.length; j < len2; j++) {
 						result.push(keywordList1[i] + joinword + keywordList2[j]);
@@ -552,6 +658,14 @@
 			$operator.attr("data-scope-rank",scopeRank);
 		},
 		helper: {
+			clearCanvas: function() {
+				$(".canvas").html('');
+				page.helper.addRulePlaceholder();
+				page.events.switchOnNewArgPanel();
+				_memo.resetPropdata();
+				//_memo.oid = 1;
+				//_memo.propdata = {};
+			},
 			// add an argument placeholder
 			addArgPlaceHolder: function(container) {
 				// Get a placeholder copy from row moudle on side bar
@@ -1092,16 +1206,32 @@
 			// hover event on item drag-handle in side bar
 			$(".sample-arg-list a>span").hover(function() { $(this).toggleClass("label-danger"); });
 
+			$(".js-folders").on("click", "a", function() {
+				var index = $(this).data("folder-index");
+				_folder.show(index);
+			});
+
+			$(".js-newfolder").click(function() {
+				_folder.create();
+				//layer.msg("New folder has been created.");
+			});
+			$(".js-destroy").click(function() {
+				page.confirm('Are you sure to destroy this folder?', function(){
+					_folder.destroy(_memo.curFolderIndex);
+				});
+			});
+			$(".js-rename").click(function() {
+				var foldername = _folder.folderdata.list[_memo.curFolderIndex].name;
+				layer.prompt({title: "Type a new name", formType: 0, value: foldername}, function(text, index){
+					layer.close(index);
+					_folder.rename(_memo.curFolderIndex, text);
+				});
+			});
 			// click clear button
 			$(".js-clear").click(function() {
 				page.confirm('Are you sure to clear?', function(){
-					$(".canvas").html('');
-					_memo.oid = 1;
-					_memo.propdata = {};
-					page.helper.addRulePlaceholder();
-					page.events.switchOnNewArgPanel();
-					// reset memo data
-					_save.layouthistory.list = [];
+					_folder.clear();
+					page.helper.clearCanvas();
 				});
 			});
 
@@ -1182,7 +1312,6 @@
 				}
 			});
 
-
 			 //click event on prop panel
 			$("#argument_prop").on("click", ".js-update", updateArgFunc)
 			.on("blur", "input, textarea", updateArgFunc)
@@ -1198,7 +1327,6 @@
 					$(this).val($operator.attr("data-func"));
 				}
 			});
-
 
 			// click the blank area of canvas
 			$(".main-panel>.content").click(function() {
@@ -1223,31 +1351,15 @@
 				layer.close(index);
 			});
 		},
-		showNotification: function(msg, from, align, color){
+		showNotification: function(msg){
 			//layer.msg(msg, {offset:['5px', '300px'], icon: 0});
 			layer.msg(msg, {
-				offset: ["9px", "200px"],
+				//offset: "b",//["9px", "200px"],
 				icon: 0,
 				area: "500px",
-				closeBtn: 1,
-				time: 5000
+				//closeBtn: 1,
+				//time: 5000
 			});
-            //if (!msg) msg = "Welcome to <b>Keyword Maker</b>.";
-            //if (!from) from = "top";
-            //if (!align) align = "center";
-            //if (!color) color = "warning";
-            //
-            //$.notify({
-	        //	icon: "ti-bell",
-	        //	message: msg
-	        //},{
-	        //    type: color, // could be 'info','success','warning','danger'
-	        //    timer: 1000,
-	        //    placement: {
-	        //        from: from,
-	        //        align: align
-	        //    }
-	        //});
 		},
 		init: function() {
 			var thispage = page, thesave = _save;
@@ -1264,6 +1376,6 @@
 		}
 	};
 	$(document).ready(function() {		
-		page.init();	
+		page.init();
 	});
 })(jQuery);

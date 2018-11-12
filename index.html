@@ -118,22 +118,6 @@
                             </div>
                             <div class="view">
                                 <ul class="module">
-                                    <!--<li class="argument box-list" data-arg-type="List">
-                                        <div class="argument singleton" data-arg-type="ListChip" data-ws-tolerance="3">
-                                            <div class="card">
-                                                <div class="header">list</div>
-                                            </div>
-                                        </div>
-                                        <div class="argument pregnant">
-                                            <ul class="list-arg-container">
-                                                <li class="argument" data-arg-type="ListChip" data-ws-tolerance="3">
-                                                    <div class="card">
-                                                        <div class="header">list</div>
-                                                    </div>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </li>-->
                                     <li class="argument box-list" data-arg-type="List">
                                         <ul class="list-arg-container">
                                             <li class="argument" data-arg-type="ListChip">
@@ -241,14 +225,30 @@
                         <span class="icon-bar bar2"></span>
                         <span class="icon-bar bar3"></span>
                     </button>
-                    <a class="navbar-brand" href="#">Rule Generator</a>
+                    <a class="navbar-brand" href="#" id="js_folder_name">Rule Generator</a>
                 </div>
                 <div class="collapse navbar-collapse">
                     <ul class="nav navbar-nav navbar-right">
+						<li class="dropdown">
+                            <a href="javascript:void(0);" class="dropdown-toggle" data-toggle="dropdown">
+                                <i class="ti-star"></i> <p>Folders</p> <b class="caret"></b>
+                            </a>
+                            <ul class="dropdown-menu js-folders"></ul>
+                        </li>
+                        <li class="dropdown">
+                            <a href="javascript:void(0);" class="dropdown-toggle nav-separator" data-toggle="dropdown">
+                                <i class="ti-palette"></i> <p>Operation</p> <b class="caret"></b>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a href="javascript:void(0);" class="js-newfolder" title="Create a new folder"><i class="ti-plus"></i> New</a></li>
+                                <li>
+                                    <a href="javascript:void(0);" class="js-destroy" title="Destroy current editing folder"><i class="ti-trash"></i> Destroy</a>
+                                </li>
+                                <li><a href="javascript:void(0);" class="js-rename" title="Give a new name to current folder"><i class="ti-pencil-alt"></i> Rename</a></li>
+                            </ul>
+                        </li>
                         <li><a href="javascript:void(0);" class="js-preview"><i class="ti-eye"></i> <p>Preview</p></a></li>
                         <li><a href="javascript:void(0);" class="js-clear"><i class="ti-brush-alt"></i> <p>Clear</p></a></li>
-                        <!--<li><a href="javascript:void(0);" class="js-clear"><i class="ti-brush-alt"></i> <p>Save As</p></a></li>-->
-						<!--<li><a href="javascript:void(0);" class="js-save"><i class="ti-save"></i> <p>Save</p></a></li>-->
                     </ul>
 
                 </div>
@@ -286,25 +286,6 @@
     </div>
 </div>
 
-<!--<div class="modal fade" id="preview_modal">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-                <h5 class="modal-title">Preview</h5>
-            </div>
-            <div class="modal-body">
-                <textarea class="form-control" id="test"></textarea>
-            </div>
-            <div class="modal-footer">
-                &lt;!&ndash;<button type="button" class="btn btn-primary">Save changes</button>&ndash;&gt;
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>-->
 <div id="preview_modal" class="hide"><textarea class="form-control"></textarea></div>
 </body>
 
@@ -313,10 +294,10 @@
 	<script src="assets/js/bootstrap.min.js" type="text/javascript"></script>
 
 	<!--  Checkbox, Radio & Switch Plugins -->
-	<script src="assets/js/bootstrap-checkbox-radio.js"></script>
+	<!--<script src="assets/js/bootstrap-checkbox-radio.js"></script>-->
 
     <!--  Notifications Plugin    -->
-    <script src="assets/js/bootstrap-notify.js"></script>
+    <!--<script src="assets/js/bootstrap-notify.js"></script>-->
 
     <!-- Drag & Drop -->
     <script src="assets/js/jquery-ui.js"></script>
